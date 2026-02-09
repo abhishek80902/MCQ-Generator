@@ -1,0 +1,15 @@
+{
+  "quiz": [
+    {
+      "mcq": "Question text here",
+      "options": {
+        "a": "Option A",
+        "b": "Option B",
+        "c": "Option C",
+        "d": "Option D"
+      },
+      "correct": "a"
+    }
+  ],
+  "review": "Brief complexity and quality review of the quiz"
+}
