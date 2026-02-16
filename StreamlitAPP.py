@@ -5,16 +5,24 @@ import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
 
-from langchain.callbacks import get_openai_callback
-
 from src.mcqgenerator.utils import read_file, get_table_data
 from src.mcqgenerator.MCQGenerator import generate_evaluate_chain
-from src.mcqgenerator.logger import logging
 
 # ----------------------------------------
-# Basic setup
+# Environment setup
 # ----------------------------------------
-load_dotenv()
+load_dotenv()  # Works locally
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+if not OPENAI_API_KEY:
+    st.error("❌ OPENAI_API_KEY not found.")
+    st.info("👉 Add it in Streamlit Cloud → App Settings → Secrets")
+    st.stop()
+
+# ----------------------------------------
+# Streamlit page config
+# ----------------------------------------
 st.set_page_config(
     page_title="MCQ Generator",
     page_icon="📘",
@@ -27,15 +35,15 @@ st.set_page_config(
 try:
     with open("Response.json", "r") as file:
         RESPONSE_JSON = json.load(file)
-except Exception as e:
+except Exception:
     st.error("❌ Failed to load Response.json")
     st.stop()
 
 # ----------------------------------------
 # UI Header
 # ----------------------------------------
-st.title("📘 Your personal MCQs Creator")
-st.markdown("Generate high-quality MCQs from PDF or TXT files using LLMs 🚀")
+st.title("📘 Your Personal MCQ Creator")
+st.markdown("Generate high-quality MCQs from PDF or TXT files using AI 🚀")
 
 # ----------------------------------------
 # Sidebar Inputs
@@ -62,7 +70,7 @@ with st.sidebar:
     )
 
 # ----------------------------------------
-# Main Input Form
+# Main Input
 # ----------------------------------------
 uploaded_file = st.file_uploader(
     "📂 Upload a PDF or TXT file",
@@ -85,65 +93,49 @@ if generate_btn:
 
     with st.spinner("⏳ Generating MCQs... Please wait"):
         try:
-            # Read file
+            # Read file content
             text = read_file(uploaded_file)
 
-            # OpenAI callback
-            with get_openai_callback() as cb:
-                response = generate_evaluate_chain(
-                    {
-                        "text": text,
-                        "number": mcq_count,
-                        "subject": subject,
-                        "tone": tone,
-                        "response_json": json.dumps(RESPONSE_JSON)
-                    }
-                )
+            # Generate MCQs
+            response = generate_evaluate_chain(
+                {
+                    "text": text,
+                    "number": mcq_count,
+                    "subject": subject,
+                    "tone": tone,
+                    "response_json": json.dumps(RESPONSE_JSON)
+                }
+            )
 
             st.success("✅ MCQs Generated Successfully!")
 
             # ----------------------------------------
-            # Token Usage
-            # ----------------------------------------
-            with st.expander("📊 Token Usage"):
-                st.write(f"**Total Tokens:** {cb.total_tokens}")
-                st.write(f"**Prompt Tokens:** {cb.prompt_tokens}")
-                st.write(f"**Completion Tokens:** {cb.completion_tokens}")
-                st.write(f"**Estimated Cost:** ${cb.total_cost:.6f}")
-
-            # ----------------------------------------
             # Display MCQs
             # ----------------------------------------
-            if isinstance(response, dict):
-                quiz = response.get("quiz")
+            if isinstance(response, dict) and response.get("quiz"):
+                table_data = get_table_data(response["quiz"])
 
-                if quiz:
-                    table_data = get_table_data(quiz)
+                if table_data:
+                    df = pd.DataFrame(table_data)
+                    df.index = df.index + 1
 
-                    if table_data:
-                        df = pd.DataFrame(table_data)
-                        df.index = df.index + 1
+                    st.subheader("📋 Generated MCQs")
+                    st.dataframe(df, use_container_width=True)
 
-                        st.subheader("📋 Generated MCQs")
-                        st.dataframe(df, use_container_width=True)
-
-                        # Download button
-                        csv = df.to_csv(index=False).encode("utf-8")
-                        st.download_button(
-                            "⬇️ Download MCQs as CSV",
-                            csv,
-                            "mcqs.csv",
-                            "text/csv"
-                        )
-                    else:
-                        st.error("❌ Failed to extract MCQ table data.")
+                    # Download CSV
+                    csv = df.to_csv(index=False).encode("utf-8")
+                    st.download_button(
+                        "⬇️ Download MCQs as CSV",
+                        csv,
+                        "mcqs.csv",
+                        "text/csv"
+                    )
                 else:
-                    st.error("❌ No quiz data found in response.")
-                    st.write(response)
+                    st.error("❌ Failed to extract MCQ table data.")
             else:
-                st.error("❌ Unexpected response format.")
+                st.error("❌ Invalid response format.")
                 st.write(response)
 
-        except Exception as e:
+        except Exception:
             st.error("❌ Something went wrong while generating MCQs.")
             st.code(traceback.format_exc())
