@@ -1,9 +1,7 @@
 import os
+import json
 from dotenv import load_dotenv
-
 from langchain_openai import ChatOpenAI
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain, SequentialChain
 
 # =========================================================
 # Environment Setup
@@ -12,7 +10,7 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # =========================================================
-# LLM Configuration (Modern LangChain)
+# LLM Setup
 # =========================================================
 llm = ChatOpenAI(
     model="gpt-3.5-turbo",
@@ -21,70 +19,27 @@ llm = ChatOpenAI(
 )
 
 # =========================================================
-# Prompt 1 — Quiz Generation
+# Main Function (No deprecated chains)
 # =========================================================
-quiz_template = """
-Text: {text}
+def generate_evaluate_chain(inputs: dict):
+    """
+    Generate MCQs using OpenAI.
+    """
 
-You are an expert MCQ maker. Given the above text, create a quiz of {number}
-multiple choice questions for {subject} students in {tone} tone.
+    prompt = f"""
+    Text:
+    {inputs['text']}
 
-Rules:
-- Do not repeat questions
-- Ensure questions match the text
-- Generate exactly {number} MCQs
+    You are an expert MCQ maker. Create {inputs['number']} {inputs['tone']} level
+    multiple choice questions for {inputs['subject']} students.
 
-### RESPONSE_JSON
-{response_json}
-"""
+    Return JSON in this format:
+    {inputs['response_json']}
+    """
 
-quiz_generation_prompt = PromptTemplate(
-    input_variables=["text", "number", "subject", "tone", "response_json"],
-    template=quiz_template
-)
+    response = llm.invoke(prompt)
 
-quiz_chain = LLMChain(
-    llm=llm,
-    prompt=quiz_generation_prompt,
-    output_key="quiz",
-    verbose=False
-)
-
-# =========================================================
-# Prompt 2 — Quiz Evaluation
-# =========================================================
-evaluation_template = """
-You are an expert English grammarian and educator.
-
-Given the following quiz for {subject} students:
-{quiz}
-
-Tasks:
-1. Evaluate question complexity (max 50 words)
-2. Improve tone if needed
-3. Fix unclear questions
-
-Return improved quiz if changes are required.
-"""
-
-quiz_evaluation_prompt = PromptTemplate(
-    input_variables=["subject", "quiz"],
-    template=evaluation_template
-)
-
-review_chain = LLMChain(
-    llm=llm,
-    prompt=quiz_evaluation_prompt,
-    output_key="review",
-    verbose=False
-)
-
-# =========================================================
-# Sequential Chain
-# =========================================================
-generate_evaluate_chain = SequentialChain(
-    chains=[quiz_chain, review_chain],
-    input_variables=["text", "number", "subject", "tone", "response_json"],
-    output_variables=["quiz", "review"],
-    verbose=False
-)
+    try:
+        return json.loads(response.content)
+    except:
+        return {"quiz": response.content}
