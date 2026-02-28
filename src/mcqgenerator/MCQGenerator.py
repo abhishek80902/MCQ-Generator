@@ -3,51 +3,49 @@ import json
 from dotenv import load_dotenv
 from huggingface_hub import InferenceClient
 
+# =========================================================
+# Load Environment
+# =========================================================
 load_dotenv()
 HF_TOKEN = os.getenv("HF_TOKEN")
 
+# =========================================================
+# Hugging Face Client (FREE CHAT MODEL)
+# =========================================================
 client = InferenceClient(
-    model="HuggingFaceH4/zephyr-7b-beta",
+    model="HuggingFaceH4/zephyr-7b-beta",  # free & supported
     token=HF_TOKEN,
 )
 
+# =========================================================
+# MCQ Generator Function
+# =========================================================
 def generate_evaluate_chain(inputs: dict):
     prompt = f"""
 You are an expert MCQ generator.
 
-Create EXACTLY {inputs['number']} multiple choice questions.
-
-Return STRICT JSON in this format:
-
-{{
-  "1": {{
-    "mcq": "Question text",
-    "options": {{
-      "A": "Option A",
-      "B": "Option B",
-      "C": "Option C",
-      "D": "Option D"
-    }},
-    "correct": "A"
-  }}
-}}
+Create EXACTLY {inputs['number']} multiple choice questions from the text below.
 
 Text:
 {inputs['text']}
+
+Return STRICT JSON in this format:
+{inputs['response_json']}
 """
 
-    response = client.text_generation(
-        prompt,
-        max_new_tokens=800,
-        temperature=0.3
+    response = client.chat_completion(
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=800,
+        temperature=0.3,
     )
 
-    # 🔹 Try to extract JSON safely
+    content = response.choices[0].message.content
+
+    # 🔹 Extract JSON safely
     try:
-        start = response.find("{")
-        end = response.rfind("}") + 1
-        cleaned = response[start:end]
+        start = content.find("{")
+        end = content.rfind("}") + 1
+        cleaned = content[start:end]
         return {"quiz": json.loads(cleaned)}
-    except Exception:
-        # fallback: return raw text
-        return {"quiz": response}
+    except:
+        return {"quiz": content}
