@@ -7,7 +7,7 @@ load_dotenv()
 HF_TOKEN = os.getenv("HF_TOKEN")
 
 client = InferenceClient(
-    model="google/flan-t5-large",
+    model="HuggingFaceH4/zephyr-7b-beta",
     token=HF_TOKEN,
 )
 
