@@ -1,6 +1,5 @@
 streamlit
-openai
 python-dotenv
 PyPDF2
 pandas
-langchain-openai
+huggingface_hub

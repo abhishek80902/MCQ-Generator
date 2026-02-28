@@ -1,45 +1,55 @@
 import os
 import json
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
+from huggingface_hub import InferenceClient
 
 # =========================================================
-# Environment Setup
+# Load Environment
 # =========================================================
 load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+HF_TOKEN = os.getenv("HF_TOKEN")
 
 # =========================================================
-# LLM Setup
+# Hugging Face Client (FREE MODEL)
 # =========================================================
-llm = ChatOpenAI(
-    model="gpt-4o-mini",
-    temperature=0.7,
-    api_key=OPENAI_API_KEY
+client = InferenceClient(
+    model="mistralai/Mistral-7B-Instruct-v0.2",
+    token=HF_TOKEN,
 )
 
 # =========================================================
-# Main Function (No deprecated chains)
+# MCQ Generator Function
 # =========================================================
 def generate_evaluate_chain(inputs: dict):
     """
-    Generate MCQs using OpenAI.
+    Generate MCQs using Hugging Face (FREE).
     """
 
     prompt = f"""
+    You are an expert MCQ generator.
+
+    Create {inputs['number']} multiple choice questions for
+    {inputs['subject']} students in {inputs['tone']} difficulty.
+
     Text:
     {inputs['text']}
 
-    You are an expert MCQ maker. Create {inputs['number']} {inputs['tone']} level
-    multiple choice questions for {inputs['subject']} students.
-
-    Return JSON in this format:
+    Return response in JSON format like:
     {inputs['response_json']}
     """
 
-    response = llm.invoke(prompt)
-
     try:
-        return json.loads(response.content)
-    except:
-        return {"quiz": response.content}
+        response = client.text_generation(
+            prompt,
+            max_new_tokens=800,
+            temperature=0.7
+        )
+
+        # Try to parse JSON
+        try:
+            return json.loads(response)
+        except:
+            return {"quiz": response}
+
+    except Exception as e:
+        return {"quiz": f"Error generating MCQs: {str(e)}"}

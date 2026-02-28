@@ -8,30 +8,30 @@ from dotenv import load_dotenv
 from src.mcqgenerator.utils import read_file, get_table_data
 from src.mcqgenerator.MCQGenerator import generate_evaluate_chain
 
-# ----------------------------------------
-# Environment setup
-# ----------------------------------------
-load_dotenv()  # For local development
+# =========================================================
+# Environment Setup
+# =========================================================
+load_dotenv()
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+HF_TOKEN = os.getenv("HF_TOKEN")
 
-if not OPENAI_API_KEY:
-    st.error("❌ OPENAI_API_KEY not found.")
-    st.info("👉 Add it in Streamlit Cloud → App Settings → Secrets")
+if not HF_TOKEN:
+    st.error("❌ Hugging Face token not found.")
+    st.info("👉 Add HF_TOKEN in Streamlit → App Settings → Secrets")
     st.stop()
 
-# ----------------------------------------
-# Streamlit page config
-# ----------------------------------------
+# =========================================================
+# Streamlit Page Config
+# =========================================================
 st.set_page_config(
     page_title="MCQ Generator",
     page_icon="📘",
     layout="wide"
 )
 
-# ----------------------------------------
-# Load response schema
-# ----------------------------------------
+# =========================================================
+# Load Response Schema
+# =========================================================
 try:
     with open("Response.json", "r") as file:
         RESPONSE_JSON = json.load(file)
@@ -39,40 +39,78 @@ except Exception:
     st.error("❌ Failed to load Response.json")
     st.stop()
 
-# ----------------------------------------
-# UI
-# ----------------------------------------
-st.title("📘 Your Personal MCQ Creator")
-st.markdown("Generate high-quality MCQs from PDF or TXT files using AI 🚀")
+# =========================================================
+# UI Header
+# =========================================================
+st.title("📘 AI MCQ Generator")
+st.markdown(
+    "Generate high-quality Multiple Choice Questions (MCQs) "
+    "from **PDF or TXT files** using Hugging Face AI 🚀"
+)
 
-# Sidebar
+# =========================================================
+# Sidebar Configuration
+# =========================================================
 with st.sidebar:
     st.header("⚙️ Configuration")
 
-    mcq_count = st.number_input("Number of MCQs", 3, 50, 5)
-    subject = st.text_input("Subject", max_chars=30, placeholder="e.g. Machine Learning")
-    tone = st.selectbox("Difficulty Level", ["Easy", "Medium", "Hard"])
+    mcq_count = st.number_input(
+        "Number of MCQs",
+        min_value=3,
+        max_value=50,
+        value=5
+    )
 
-# Main input
-uploaded_file = st.file_uploader("📂 Upload a PDF or TXT file", type=["pdf", "txt"])
+    subject = st.text_input(
+        "Subject",
+        max_chars=30,
+        placeholder="e.g. Machine Learning"
+    )
+
+    tone = st.selectbox(
+        "Difficulty Level",
+        ["Easy", "Medium", "Hard"]
+    )
+
+# =========================================================
+# File Upload
+# =========================================================
+st.subheader("📂 Upload Study Material")
+
+uploaded_file = st.file_uploader(
+    "Upload a PDF or TXT file",
+    type=["pdf", "txt"]
+)
+
 generate_btn = st.button("🚀 Generate MCQs")
 
-# ----------------------------------------
-# Logic
-# ----------------------------------------
-if generate_btn:
-    if uploaded_file is None:
-        st.warning("⚠️ Please upload a file first.")
-        st.stop()
+# =========================================================
+# Validation Function
+# =========================================================
+def validate_inputs(file, subject):
+    if file is None:
+        st.warning("⚠️ Please upload a file.")
+        return False
 
-    if not subject:
+    if not subject.strip():
         st.warning("⚠️ Please enter a subject.")
+        return False
+
+    return True
+
+# =========================================================
+# MCQ Generation Logic
+# =========================================================
+if generate_btn:
+    if not validate_inputs(uploaded_file, subject):
         st.stop()
 
     with st.spinner("⏳ Generating MCQs..."):
         try:
+            # Read file content
             text = read_file(uploaded_file)
 
+            # Generate MCQs
             response = generate_evaluate_chain(
                 {
                     "text": text,
@@ -85,6 +123,9 @@ if generate_btn:
 
             st.success("✅ MCQs Generated Successfully!")
 
+            # =================================================
+            # Display Results
+            # =================================================
             if isinstance(response, dict) and response.get("quiz"):
                 table_data = get_table_data(response["quiz"])
 
@@ -95,8 +136,14 @@ if generate_btn:
                     st.subheader("📋 Generated MCQs")
                     st.dataframe(df, use_container_width=True)
 
-                    csv = df.to_csv(index=False).encode("utf-8")
-                    st.download_button("⬇️ Download CSV", csv, "mcqs.csv", "text/csv")
+                    # Download button
+                    csv_data = df.to_csv(index=False).encode("utf-8")
+                    st.download_button(
+                        label="⬇️ Download MCQs as CSV",
+                        data=csv_data,
+                        file_name="mcqs.csv",
+                        mime="text/csv"
+                    )
                 else:
                     st.error("❌ Failed to extract MCQ data.")
             else:
@@ -104,5 +151,5 @@ if generate_btn:
                 st.write(response)
 
         except Exception:
-            st.error("❌ Something went wrong.")
+            st.error("❌ Error generating MCQs.")
             st.code(traceback.format_exc())
