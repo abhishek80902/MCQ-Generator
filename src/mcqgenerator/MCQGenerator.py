@@ -3,53 +3,51 @@ import json
 from dotenv import load_dotenv
 from huggingface_hub import InferenceClient
 
-# =========================================================
-# Load Environment
-# =========================================================
 load_dotenv()
 HF_TOKEN = os.getenv("HF_TOKEN")
 
-# =========================================================
-# Hugging Face Client (FREE MODEL)
-# =========================================================
 client = InferenceClient(
     model="mistralai/Mistral-7B-Instruct-v0.2",
     token=HF_TOKEN,
 )
 
-# =========================================================
-# MCQ Generator Function
-# =========================================================
 def generate_evaluate_chain(inputs: dict):
-    """
-    Generate MCQs using Hugging Face (FREE).
-    """
-
     prompt = f"""
-    You are an expert MCQ generator.
+You are an expert MCQ generator.
 
-    Create {inputs['number']} multiple choice questions for
-    {inputs['subject']} students in {inputs['tone']} difficulty.
+Create EXACTLY {inputs['number']} multiple choice questions.
 
-    Text:
-    {inputs['text']}
+Return STRICT JSON in this format:
 
-    Return response in JSON format like:
-    {inputs['response_json']}
-    """
+{{
+  "1": {{
+    "mcq": "Question text",
+    "options": {{
+      "A": "Option A",
+      "B": "Option B",
+      "C": "Option C",
+      "D": "Option D"
+    }},
+    "correct": "A"
+  }}
+}}
 
+Text:
+{inputs['text']}
+"""
+
+    response = client.text_generation(
+        prompt,
+        max_new_tokens=800,
+        temperature=0.3
+    )
+
+    # 🔹 Try to extract JSON safely
     try:
-        response = client.text_generation(
-            prompt,
-            max_new_tokens=800,
-            temperature=0.7
-        )
-
-        # Try to parse JSON
-        try:
-            return json.loads(response)
-        except:
-            return {"quiz": response}
-
-    except Exception as e:
-        return {"quiz": f"Error generating MCQs: {str(e)}"}
+        start = response.find("{")
+        end = response.rfind("}") + 1
+        cleaned = response[start:end]
+        return {"quiz": json.loads(cleaned)}
+    except Exception:
+        # fallback: return raw text
+        return {"quiz": response}

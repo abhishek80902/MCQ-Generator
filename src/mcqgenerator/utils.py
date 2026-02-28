@@ -48,20 +48,15 @@ def read_file(uploaded_file):
 # Convert LLM response to table format
 # =========================================================
 def get_table_data(quiz_data):
-    """
-    Converts quiz JSON into table format for Streamlit display.
-    Handles both dict and string responses.
-    """
-
     try:
-        # If LLM returned string → parse JSON
+        # If string, try parsing
         if isinstance(quiz_data, str):
-            quiz_data = json.loads(quiz_data)
+            try:
+                quiz_data = json.loads(quiz_data)
+            except:
+                return False
 
         table = []
-
-        # Expected format:
-        # { "1": { "mcq": "...", "options": {...}, "correct": "A" } }
 
         for key, value in quiz_data.items():
             question = value.get("mcq", "")
@@ -69,7 +64,7 @@ def get_table_data(quiz_data):
             correct = value.get("correct", "")
 
             options = " || ".join(
-                f"{opt}: {text}" for opt, text in options_dict.items()
+                f"{k}: {v}" for k, v in options_dict.items()
             )
 
             table.append({
@@ -80,6 +75,5 @@ def get_table_data(quiz_data):
 
         return table
 
-    except Exception as e:
-        traceback.print_exc()
+    except Exception:
         return False
