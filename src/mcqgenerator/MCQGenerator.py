@@ -7,7 +7,7 @@ load_dotenv()
 HF_TOKEN = os.getenv("HF_TOKEN")
 
 client = InferenceClient(
-    model="mistralai/Mistral-7B-Instruct-v0.2",
+    model="google/flan-t5-large",
     token=HF_TOKEN,
 )
 
