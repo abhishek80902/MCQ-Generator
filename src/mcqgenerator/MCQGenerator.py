@@ -20,7 +20,7 @@ Return JSON format like:
 """
 
     response = client.chat.completions.create(
-        model="llama3-8b-8192",  # FREE & fast
+        model="llama3-8b-8192",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
     )

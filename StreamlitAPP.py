@@ -13,11 +13,11 @@ from src.mcqgenerator.MCQGenerator import generate_evaluate_chain
 # =========================================================
 load_dotenv()
 
-HF_TOKEN = os.getenv("HF_TOKEN")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-if not HF_TOKEN:
-    st.error("❌ Hugging Face token not found.")
-    st.info("👉 Add HF_TOKEN in Streamlit → App Settings → Secrets")
+if not GROQ_API_KEY:
+    st.error("❌ GROQ_API_KEY not found.")
+    st.info("👉 Add GROQ_API_KEY in Streamlit → App Settings → Secrets")
     st.stop()
 
 # =========================================================
@@ -45,7 +45,7 @@ except Exception:
 st.title("📘 AI MCQ Generator")
 st.markdown(
     "Generate high-quality Multiple Choice Questions (MCQs) "
-    "from **PDF or TXT files** using Hugging Face AI 🚀"
+    "from **PDF or TXT files** using FREE AI 🚀"
 )
 
 # =========================================================
