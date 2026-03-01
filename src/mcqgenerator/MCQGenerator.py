@@ -10,23 +10,38 @@ client = Groq(api_key=GROQ_API_KEY)
 
 def generate_evaluate_chain(inputs: dict):
     prompt = f"""
-Create {inputs['number']} multiple choice questions from the text below.
+You are an expert MCQ generator.
+
+Create EXACTLY {inputs['number']} multiple choice questions.
+
+Return ONLY valid JSON in this format:
+
+{{
+  "1": {{
+    "mcq": "Question text",
+    "options": {{
+      "A": "Option A",
+      "B": "Option B",
+      "C": "Option C",
+      "D": "Option D"
+    }},
+    "correct": "A"
+  }}
+}}
 
 Text:
 {inputs['text']}
-
-Return JSON format like:
-{inputs['response_json']}
 """
 
     response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,
+        temperature=0.2,
     )
 
     content = response.choices[0].message.content
 
+    # 🔹 Extract JSON safely
     try:
         start = content.find("{")
         end = content.rfind("}") + 1

@@ -49,7 +49,7 @@ def read_file(uploaded_file):
 # =========================================================
 def get_table_data(quiz_data):
     try:
-        # If string, try parsing
+        # If string → try JSON parse
         if isinstance(quiz_data, str):
             try:
                 quiz_data = json.loads(quiz_data)
