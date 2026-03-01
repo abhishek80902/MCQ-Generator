@@ -2,4 +2,4 @@ streamlit
 python-dotenv
 PyPDF2
 pandas
-huggingface_hub
+groq
