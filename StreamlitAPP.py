@@ -124,7 +124,8 @@ if generate_btn:
                     # ✅ Display MCQs as clean cards
                     for i, row in df.iterrows():
                         st.markdown(f"### Q{i+1}. {row['Question']}")
-                        st.markdown(row["Options"])
+                        options_html = row["Options"].replace("\n", "<br>")
+                        st.markdown(options_html, unsafe_allow_html=True)
                         st.markdown(f"**✅ Answer:** {row['Correct Answer']}")
                         st.divider()
 

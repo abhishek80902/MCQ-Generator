@@ -59,10 +59,13 @@ def get_table_data(quiz_data):
             options_dict = value.get("options", {})
             correct = value.get("correct", "")
 
-            # ✅ Format options as clean multiline text
-            options = "\n".join(
-                f"{key}. {text}" for key, text in options_dict.items()
-            )
+            # ✅ Ensure one option per line
+            formatted_options = []
+            for key in ["A", "B", "C", "D"]:
+                if key in options_dict:
+                    formatted_options.append(f"{key}. {options_dict[key]}")
+
+            options = "\n".join(formatted_options)
 
             table.append({
                 "Question": question,
