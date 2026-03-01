@@ -134,7 +134,7 @@ if generate_btn:
                     df.index += 1
 
                     st.subheader("📋 Generated MCQs")
-                    st.dataframe(df, use_container_width=True)
+                    st.dataframe(df, use_container_width=True, height=500)
 
                     # Download button
                     csv_data = df.to_csv(index=False).encode("utf-8")

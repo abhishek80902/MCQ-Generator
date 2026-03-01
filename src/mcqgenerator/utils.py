@@ -49,22 +49,19 @@ def read_file(uploaded_file):
 # =========================================================
 def get_table_data(quiz_data):
     try:
-        # If string → try JSON parse
         if isinstance(quiz_data, str):
-            try:
-                quiz_data = json.loads(quiz_data)
-            except:
-                return False
+            quiz_data = json.loads(quiz_data)
 
         table = []
 
-        for key, value in quiz_data.items():
+        for _, value in quiz_data.items():
             question = value.get("mcq", "")
             options_dict = value.get("options", {})
             correct = value.get("correct", "")
 
-            options = " || ".join(
-                f"{k}: {v}" for k, v in options_dict.items()
+            # ✅ multiline options for better visibility
+            options = "\n".join(
+                f"{key}: {text}" for key, text in options_dict.items()
             )
 
             table.append({
