@@ -12,7 +12,6 @@ from src.mcqgenerator.MCQGenerator import generate_evaluate_chain
 # Environment Setup
 # =========================================================
 load_dotenv()
-
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 if not GROQ_API_KEY:
@@ -21,7 +20,7 @@ if not GROQ_API_KEY:
     st.stop()
 
 # =========================================================
-# Streamlit Page Config
+# Page Config
 # =========================================================
 st.set_page_config(
     page_title="MCQ Generator",
@@ -54,12 +53,7 @@ st.markdown(
 with st.sidebar:
     st.header("⚙️ Configuration")
 
-    mcq_count = st.number_input(
-        "Number of MCQs",
-        min_value=3,
-        max_value=50,
-        value=5
-    )
+    mcq_count = st.number_input("Number of MCQs", 3, 50, 5)
 
     subject = st.text_input(
         "Subject",
@@ -67,10 +61,7 @@ with st.sidebar:
         placeholder="e.g. Machine Learning"
     )
 
-    tone = st.selectbox(
-        "Difficulty Level",
-        ["Easy", "Medium", "Hard"]
-    )
+    tone = st.selectbox("Difficulty Level", ["Easy", "Medium", "Hard"])
 
 # =========================================================
 # File Upload
@@ -85,21 +76,19 @@ uploaded_file = st.file_uploader(
 generate_btn = st.button("🚀 Generate MCQs")
 
 # =========================================================
-# Validation Function
+# Validation
 # =========================================================
 def validate_inputs(file, subject):
     if file is None:
         st.warning("⚠️ Please upload a file.")
         return False
-
     if not subject.strip():
         st.warning("⚠️ Please enter a subject.")
         return False
-
     return True
 
 # =========================================================
-# MCQ Generation Logic
+# MCQ Generation
 # =========================================================
 if generate_btn:
     if not validate_inputs(uploaded_file, subject):
@@ -107,19 +96,17 @@ if generate_btn:
 
     with st.spinner("⏳ Generating MCQs..."):
         try:
-            # Read file content
+            # Read file
             text = read_file(uploaded_file)
 
             # Generate MCQs
-            response = generate_evaluate_chain(
-                {
-                    "text": text,
-                    "number": mcq_count,
-                    "subject": subject,
-                    "tone": tone,
-                    "response_json": json.dumps(RESPONSE_JSON),
-                }
-            )
+            response = generate_evaluate_chain({
+                "text": text,
+                "number": mcq_count,
+                "subject": subject,
+                "tone": tone,
+                "response_json": json.dumps(RESPONSE_JSON),
+            })
 
             st.success("✅ MCQs Generated Successfully!")
 
@@ -131,23 +118,23 @@ if generate_btn:
 
                 if table_data:
                     df = pd.DataFrame(table_data)
-                    df.index += 1
 
                     st.subheader("📋 Generated MCQs")
-                    st.data_editor(
-    df,
-    use_container_width=True,
-    height=500,
-    disabled=True
-)
 
-                    # Download button
+                    # ✅ Display MCQs as clean cards
+                    for i, row in df.iterrows():
+                        st.markdown(f"### Q{i+1}. {row['Question']}")
+                        st.markdown(row["Options"])
+                        st.markdown(f"**✅ Answer:** {row['Correct Answer']}")
+                        st.divider()
+
+                    # ✅ Download CSV
                     csv_data = df.to_csv(index=False).encode("utf-8")
                     st.download_button(
-                        label="⬇️ Download MCQs as CSV",
-                        data=csv_data,
-                        file_name="mcqs.csv",
-                        mime="text/csv"
+                        "⬇️ Download MCQs as CSV",
+                        csv_data,
+                        "mcqs.csv",
+                        "text/csv"
                     )
                 else:
                     st.error("❌ Failed to extract MCQ data.")

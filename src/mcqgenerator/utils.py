@@ -59,9 +59,9 @@ def get_table_data(quiz_data):
             options_dict = value.get("options", {})
             correct = value.get("correct", "")
 
-            # ✅ multiline options for better visibility
+            # ✅ Format options as clean multiline text
             options = "\n".join(
-                f"{key}: {text}" for key, text in options_dict.items()
+                f"{key}. {text}" for key, text in options_dict.items()
             )
 
             table.append({
